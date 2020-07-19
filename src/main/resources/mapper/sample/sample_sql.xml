@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="sample">
+
+	<select id="selectBoardList" parameterType="hashmap" resultType="hashmap"> 
+      <include refid="common.pagingPre"/> 
+         <![CDATA[ 
+            SELECT 
+               ROW_NUMBER() OVER (ORDER BY IDX DESC) RNUM, 
+               IDX, 
+               TITLE, 
+               HIT_CNT, 
+               CREA_DTM 
+            FROM 
+               TB_BOARD 
+            WHERE 
+               DEL_GB = 'N' 
+         ]]> 
+      <include refid="common.pagingPost"/> 
+   </select>
+	<select id="selectBoardDetail" parameterType="hashmap" resultType="hashmap">
+		select idx, hit_cnt, crea_id, crea_dtm, title, contents from tb_board where idx = #{idx}
+	</select>
+	<select id="selectFileList" parameterType="hashmap" resultType="hashmap">
+		select idx, original_file_name, round(file_size/1024, 1) as file_size from tb_file where board_idx = #{idx} and del_gb = 'N'
+	</select>
+	
+	<insert id="insertBoard" parameterType="hashmap">
+		<selectKey keyProperty="idx" resultType="string" order="BEFORE"> select seq_tb_board_idx.nextval from dual</selectKey>
+		insert into tb_board(idx, title, contents, hit_cnt, del_gb, crea_dtm, crea_id) values(#{idx}, #{title}, #{contents}, 0, 'N', sysdate, 'Admin')
+	</insert>
+	<insert id="insertFile" parameterType="hashmap">
+		insert into tb_file(idx, board_idx, original_file_name, stored_file_name, file_size, crea_id)
+		values(seq_tb_file_idx.nextval, #{board_idx}, #{original_file_name}, #{stored_file_name}, #{file_size}, 'Admin')
+	</insert>
+	
+	<update id="updateHitCnt" parameterType="hashmap">
+		update tb_board set hit_cnt = NVL(hit_cnt, 0) + 1 where idx = #{idx}
+	</update>
+	<update id="updateBoard" parameterType="hashmap">
+		update tb_board set title = #{title}, contents = #{contents} where idx = ${idx}
+	</update>
+	<update id="updateFile" parameterType="hashMap">
+		update tb_file set del_gb = 'N' where idx = #{file_idx}
+	</update>
+	
+	<update id="deleteBoard" parameterType="hashmap">
+		update tb_board set del_gb = 'Y' where idx = #{idx}
+	</update>
+	<update id="deleteFileList" parameterType="hashMap">
+		update tb_file set del_gb = 'Y' where board_idx = #{idx} 
+	</update>
+	
+</mapper>
